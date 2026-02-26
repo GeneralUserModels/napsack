@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.11, <=3.13"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -1331,6 +1331,61 @@ wheels = [
 ]
 
 [[package]]
+name = "napsack"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "datasets" },
+    { name = "dotenv" },
+    { name = "google-cloud-bigquery" },
+    { name = "google-cloud-storage" },
+    { name = "google-genai" },
+    { name = "google-generativeai" },
+    { name = "imageio" },
+    { name = "ipdb" },
+    { name = "matplotlib" },
+    { name = "mss" },
+    { name = "nbformat" },
+    { name = "numpy" },
+    { name = "openai" },
+    { name = "opencv-python" },
+    { name = "pandas" },
+    { name = "pillow" },
+    { name = "plotly" },
+    { name = "pynput" },
+    { name = "ruptures" },
+    { name = "scikit-image" },
+    { name = "scikit-learn" },
+    { name = "screeninfo" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "datasets", specifier = ">=3.0.0,<4.0.0" },
+    { name = "dotenv", specifier = ">=0.9.9" },
+    { name = "google-cloud-bigquery", specifier = ">=3.38.0" },
+    { name = "google-cloud-storage", specifier = ">=3.6.0" },
+    { name = "google-genai", specifier = ">=1.45.0" },
+    { name = "google-generativeai", specifier = ">=0.8.5" },
+    { name = "imageio", specifier = ">=2.37.0" },
+    { name = "ipdb", specifier = ">=0.13.13,<0.14.0" },
+    { name = "matplotlib", specifier = ">=3.10.3,<4.0.0" },
+    { name = "mss", specifier = ">=10.0.0,<11.0.0" },
+    { name = "nbformat", specifier = ">=5.10.4,<6.0.0" },
+    { name = "numpy", specifier = "==2.2" },
+    { name = "openai", specifier = ">=2.8.1" },
+    { name = "opencv-python", specifier = ">=4.11.0.86,<5.0.0.0" },
+    { name = "pandas", specifier = ">=2.3.0,<3.0.0" },
+    { name = "pillow", specifier = ">=11.3.0" },
+    { name = "plotly", specifier = ">=6.2.0,<7.0.0" },
+    { name = "pynput", specifier = ">=1.8.1" },
+    { name = "ruptures", specifier = ">=1.1.9,<2.0.0" },
+    { name = "scikit-image", specifier = ">=0.25.2" },
+    { name = "scikit-learn", specifier = ">=1.7.0,<2.0.0" },
+    { name = "screeninfo", specifier = ">=0.8.1" },
+]
+
+[[package]]
 name = "narwhals"
 version = "2.10.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1445,61 +1500,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/68/1f/795e7f4aa2eacc59afa4fb61a2e35e510d06414dd5a802b51a012d691b37/opencv_python-4.12.0.88-cp37-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:092c16da4c5a163a818f120c22c5e4a2f96e0db4f24e659c701f1fe629a690f9", size = 67041680, upload-time = "2025-07-07T09:14:01.995Z" },
     { url = "https://files.pythonhosted.org/packages/02/96/213fea371d3cb2f1d537612a105792aa0a6659fb2665b22cad709a75bd94/opencv_python-4.12.0.88-cp37-abi3-win32.whl", hash = "sha256:ff554d3f725b39878ac6a2e1fa232ec509c36130927afc18a1719ebf4fbf4357", size = 30284131, upload-time = "2025-07-07T09:14:08.819Z" },
     { url = "https://files.pythonhosted.org/packages/fa/80/eb88edc2e2b11cd2dd2e56f1c80b5784d11d6e6b7f04a1145df64df40065/opencv_python-4.12.0.88-cp37-abi3-win_amd64.whl", hash = "sha256:d98edb20aa932fd8ebd276a72627dad9dc097695b3d435a4257557bbb49a79d2", size = 39000307, upload-time = "2025-07-07T09:14:16.641Z" },
-]
-
-[[package]]
-name = "pack"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "datasets" },
-    { name = "dotenv" },
-    { name = "google-cloud-bigquery" },
-    { name = "google-cloud-storage" },
-    { name = "google-genai" },
-    { name = "google-generativeai" },
-    { name = "imageio" },
-    { name = "ipdb" },
-    { name = "matplotlib" },
-    { name = "mss" },
-    { name = "nbformat" },
-    { name = "numpy" },
-    { name = "openai" },
-    { name = "opencv-python" },
-    { name = "pandas" },
-    { name = "pillow" },
-    { name = "plotly" },
-    { name = "pynput" },
-    { name = "ruptures" },
-    { name = "scikit-image" },
-    { name = "scikit-learn" },
-    { name = "screeninfo" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "datasets", specifier = ">=3.0.0,<4.0.0" },
-    { name = "dotenv", specifier = ">=0.9.9" },
-    { name = "google-cloud-bigquery", specifier = ">=3.38.0" },
-    { name = "google-cloud-storage", specifier = ">=3.6.0" },
-    { name = "google-genai", specifier = ">=1.45.0" },
-    { name = "google-generativeai", specifier = ">=0.8.5" },
-    { name = "imageio", specifier = ">=2.37.0" },
-    { name = "ipdb", specifier = ">=0.13.13,<0.14.0" },
-    { name = "matplotlib", specifier = ">=3.10.3,<4.0.0" },
-    { name = "mss", specifier = ">=10.0.0,<11.0.0" },
-    { name = "nbformat", specifier = ">=5.10.4,<6.0.0" },
-    { name = "numpy", specifier = "==2.2" },
-    { name = "openai", specifier = ">=2.8.1" },
-    { name = "opencv-python", specifier = ">=4.11.0.86,<5.0.0.0" },
-    { name = "pandas", specifier = ">=2.3.0,<3.0.0" },
-    { name = "pillow", specifier = ">=11.3.0" },
-    { name = "plotly", specifier = ">=6.2.0,<7.0.0" },
-    { name = "pynput", specifier = ">=1.8.1" },
-    { name = "ruptures", specifier = ">=1.1.9,<2.0.0" },
-    { name = "scikit-image", specifier = ">=0.25.2" },
-    { name = "scikit-learn", specifier = ">=1.7.0,<2.0.0" },
-    { name = "screeninfo", specifier = ">=0.8.1" },
 ]
 
 [[package]]

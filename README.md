@@ -1,8 +1,8 @@
-# Pack
+# NAPsack
 
-**Pack** records and aggregates your computer use — screenshots plus input events (click, keypress, scroll, cursor move). It groups activity into event bursts and uses a VLM pipeline to generate human-readable captions describing what happened.
+**NAPsack** records and aggregates your computer use — screenshots plus input events (click, keypress, scroll, cursor move). It groups activity into event bursts and uses a VLM pipeline to generate human-readable captions describing what happened.
 
-<img alt="pack_overview" src="https://github.com/user-attachments/assets/5bab2b31-0564-448c-b286-de06859b7c97" />
+<img alt="napsack_overview" src="https://github.com/user-attachments/assets/5bab2b31-0564-448c-b286-de06859b7c97" />
 
 ---
 
@@ -17,8 +17,8 @@
 ## Install
 
 ```shell
-git clone https://github.com/GeneralUserModels/pack.git  # Clone repo
-cd pack
+git clone https://github.com/GeneralUserModels/napsack.git  # Clone repo
+cd napsack
 cp .env.example .env  #  Optionally add your Gemini API key here
 ```
 
