@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 import os
 from typing import Dict
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 @dataclass(frozen=True)
@@ -73,10 +76,11 @@ class ConstantsManager:
         if not hasattr(self, '_initialized'):
             self._initialized = True
             preset = os.getenv("CAPTURE_PRECISION", "accurate").lower()
-            self.set_preset(preset, verbose=False)
+            self.set_preset()
 
-    def set_preset(self, preset_name: str, verbose: bool = True) -> None:
+    def set_preset(self) -> None:
         """Set the current preset by name."""
+        preset_name = os.getenv("CAPTURE_PRECISION", "accurate")
         preset_name = preset_name.lower()
 
         if preset_name not in PRESETS:
@@ -87,9 +91,8 @@ class ConstantsManager:
 
         self._current_preset = preset_name
 
-        if verbose:
-            print(f"Setting constants to '{preset_name}' precision.")
-            print(f"Constants: {self.get()}")
+        print(f"Setting constants to '{preset_name}' precision.")
+        print(f"Constants: {self.get()}")
 
     def get(self) -> ConstantsSpec:
         """Get the current constants specification."""

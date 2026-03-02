@@ -36,7 +36,7 @@ def split_video(video_path: Path, chunk_duration: int, out_dir: Path, start_inde
 
     num_chunks = math.ceil(duration / float(chunk_duration))
     chunk_paths = []
-    
+
     print(f"[Split] 1-minute chunking: Splitting {video_path.name} into {num_chunks} chunks of {chunk_duration}s each (total duration: {duration:.1f}s)")
 
     for i in range(num_chunks):
@@ -270,6 +270,8 @@ def create_video(
             # Use aggregations to get image paths
             for idx, agg in enumerate(aggregations):
                 src = Path(agg.screenshot_path)
+                if not src.exists():
+                    src = session_dir / "screenshots" / agg.screenshot_path.name if session_dir else None
                 dst = tmpdir_path / f"{idx:06d}.png"
 
                 if annotate:
@@ -289,20 +291,22 @@ def create_video(
 
                     img.save(dst)
                 else:
-                    shutil.copy2(src, dst)
+                    with Image.open(src) as im:
+                        im.save(dst, format="PNG")
                     pending_movement = []
         else:
             # Use image_paths directly (screenshots-only mode)
             for idx, img_path in enumerate(image_paths):
                 src = Path(img_path)
                 dst = tmpdir_path / f"{idx:06d}.png"
-                shutil.copy2(src, dst)
+                with Image.open(src) as im:
+                    im.save(dst, format="PNG")
 
         vf_parts = []
         if pad_to:
             w, h = pad_to
             vf_parts.append(f"scale=iw*min({w}/iw\\,{h}/ih):ih*min({w}/iw\\,{h}/ih),pad={w}:{h}:(ow-iw)/2:(oh-ih)/2")
-        
+
         # Ensure even dimensions for yuv420p compatibility
         vf_parts.append("pad=ceil(iw/2)*2:ceil(ih/2)*2")
 

@@ -56,8 +56,6 @@ class ScreenRecorder:
         max_res: tuple[int, int] = None,
         scale: Union[float, dict[int, float]] = None,
         accessibility: bool = False,
-        compression_quality: int = 70,
-        lossless: bool = False,
         save_screenshots: bool = True,
         disable: Optional[List[str]] = None
     ):
@@ -118,8 +116,6 @@ class ScreenRecorder:
         self.save_worker = SaveWorker(
             self.session_dir,
             buffer_all,
-            compression_quality=compression_quality,
-            lossless=lossless,
             save_screenshots=save_screenshots
         )
 
@@ -336,32 +332,14 @@ def main():
     parser.add_argument(
         "-r", "--max-res",
         type=int,
-        default=None,
+        default=(1920, 1080),
         nargs=2,
         help="Maximal resolution for screenshots (width, height)"
-    )
-    parser.add_argument(
-        "-p", "--precision",
-        type=str,
-        choices=["accurate", "rough"],
-        default="accurate",
-        help="Precision level for event aggregation (default: accurate)"
     )
     parser.add_argument(
         "-a", "--accessibility",
         action="store_true",
         help="Enable accessibility info capture (macOS only, may impact performance)"
-    )
-    parser.add_argument(
-        "-c", "--compression-quality",
-        type=int,
-        help="JPEG compression quality for saved screenshots (1-100, default: 70)",
-        default=70
-    )
-    parser.add_argument(
-        "-l", "--lossless",
-        action="store_true",
-        help="Save screenshots as PNG (lossless) instead of JPEG"
     )
     parser.add_argument(
         "-d", "--dpi",
@@ -386,7 +364,7 @@ def main():
 
     args = parser.parse_args()
 
-    constants_manager.set_preset(args.precision, verbose=False)
+    constants_manager.set_preset()
 
     # Calculate scale factor from DPI if provided
     scale = args.scale  # Can be a single float
@@ -398,7 +376,7 @@ def main():
             for idx, dpi in monitor_dpis.items():
                 print(f"  Monitor {idx}: {dpi:.1f} DPI → scale {scale[idx]:.3f}")
         else:
-            print(f"Warning: Could not detect screen DPI. --dpi will be ignored.")
+            print("Warning: Could not detect screen DPI. --dpi will be ignored.")
 
     recorder = ScreenRecorder(
         fps=args.fps,
@@ -408,8 +386,6 @@ def main():
         max_res=args.max_res,
         scale=scale,
         accessibility=args.accessibility,
-        compression_quality=args.compression_quality,
-        lossless=args.lossless,
         disable=args.disable
     )
     recorder.run()
