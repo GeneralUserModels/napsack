@@ -18,7 +18,7 @@ from label.clients import VLMClient, CAPTION_SCHEMA
 
 def load_hash_cache(cache_path: str) -> Optional[Dict[str, int]]:
     """Load hash cache from JSON file. Returns path -> hash_int mapping.
-    
+
     Normalizes paths to use the last 3 components (user/screenshots/filename)
     as the key for robust matching regardless of absolute/relative paths.
     """
@@ -26,11 +26,11 @@ def load_hash_cache(cache_path: str) -> Optional[Dict[str, int]]:
     if not p.exists():
         print(f"[Warning] Hash cache not found: {cache_path}")
         return None
-    
+
     try:
         with p.open("r", encoding="utf-8") as f:
             data = json.load(f)
-        
+
         entries = data.get("entries", {})
         hash_map = {}
         for path, info in entries.items():
@@ -43,7 +43,7 @@ def load_hash_cache(cache_path: str) -> Optional[Dict[str, int]]:
                 else:
                     key = path
                 hash_map[key] = hash_int
-        
+
         print(f"[Hash] Loaded {len(hash_map):,} hashes from cache")
         return hash_map
     except Exception as e:
@@ -72,59 +72,59 @@ def dedupe_images_by_hash(
 ) -> List[Path]:
     """
     Filter consecutive images that are too similar (hamming distance <= dedupe_threshold).
-    
+
     Only keeps images where the hash difference from the previous kept image is > threshold.
     This collapses runs of near-identical images into a single representative.
-    
+
     Args:
         image_files: List of image file paths (should be sorted)
         hash_map: Dictionary mapping normalized path keys to hash integers
         dedupe_threshold: Maximum hamming distance to consider images as duplicates
         verbose: Whether to print deduplication statistics
-    
+
     Returns:
         Filtered list of image paths
     """
     if not hash_map or not image_files:
         return image_files
-    
+
     original_count = len(image_files)
     kept_images = []
     last_kept_hash = None
-    
+
     for img_path in image_files:
         hash_key = get_hash_key(img_path)
         curr_hash = hash_map.get(hash_key)
-        
+
         if curr_hash is None:
             # No hash available, keep the image
             kept_images.append(img_path)
             last_kept_hash = None
             continue
-        
+
         if last_kept_hash is None:
             # First image with a hash, always keep
             kept_images.append(img_path)
             last_kept_hash = curr_hash
             continue
-        
+
         distance = hamming_distance(last_kept_hash, curr_hash)
-        
+
         if distance > dedupe_threshold:
             # Different enough, keep it
             kept_images.append(img_path)
             last_kept_hash = curr_hash
         # else: skip this image (too similar to last kept)
-    
+
     if verbose:
         kept_count = len(kept_images)
         dropped_count = original_count - kept_count
         pct_saved = (dropped_count / original_count * 100) if original_count > 0 else 0
-        
+
         print(f"[Dedupe] Kept {kept_count:,} of {original_count:,} images "
               f"(dropped {dropped_count:,}, saved {pct_saved:.1f}%) "
               f"[threshold={dedupe_threshold}]")
-    
+
     return kept_images
 
 
@@ -196,7 +196,7 @@ class Processor:
         annotate: bool
     ) -> List[ChunkTask]:
 
-        aggs = config.load_aggregations() if annotate else None
+        aggs = config.load_aggregations()
         image_paths = [Path(agg.screenshot_path) for agg in aggs if agg.screenshot_path and Path(agg.screenshot_path).exists()]
         global_start = self._extract_timestamp(image_paths[0]) if image_paths else 0.0
         if not config.master_video_path.exists():
@@ -259,11 +259,11 @@ class Processor:
 
         # Group images by time gaps (split if > max_time_gap seconds apart)
         image_segments = self._split_images_by_time_gap(image_files, max_gap_seconds=self.max_time_gap)
-        
+
         print(f"\n[Segments] Created {len(image_segments)} segment(s) from {len(image_files)} images (max gap: {self.max_time_gap}s)")
         for idx, seg in enumerate(image_segments):
             print(f"  Segment {idx}: {len(seg)} images")
-        
+
         # At 1 fps, chunk_duration seconds = chunk_duration images
         images_per_chunk = config.chunk_duration * fps
 
@@ -278,21 +278,21 @@ class Processor:
 
             segment_duration = len(segment_images) / fps
             num_chunks = math.ceil(len(segment_images) / images_per_chunk)
-            
+
             print(f"[Chunk] Segment {segment_idx}: Preparing {num_chunks} chunk(s) from {len(segment_images)} images")
 
             for i in range(num_chunks):
                 start_img_idx = i * images_per_chunk
                 end_img_idx = min((i + 1) * images_per_chunk, len(segment_images))
                 chunk_images = segment_images[start_img_idx:end_img_idx]
-                
+
                 if not chunk_images:
                     continue
 
                 chunk_video_path = config.chunks_dir / f"{chunk_index:03d}.mp4"
                 chunk_start_in_segment = i * config.chunk_duration
                 actual_chunk_duration = len(chunk_images) / fps
-                
+
                 chunk_jobs.append({
                     'chunk_index': chunk_index,
                     'chunk_images': chunk_images,
@@ -320,7 +320,7 @@ class Processor:
             return job
 
         print(f"[Encode] Creating {len(chunk_jobs)} chunk videos with {self.encode_workers} parallel workers...")
-        
+
         with ThreadPoolExecutor(max_workers=self.encode_workers) as executor:
             completed_jobs = list(tqdm(
                 executor.map(create_chunk_video, chunk_jobs),
@@ -342,65 +342,65 @@ class Processor:
             ))
 
         return tasks
-    
+
     def _split_images_by_time_gap(self, image_files: List[Path], max_gap_seconds: float = 30) -> List[List[Path]]:
         """
         Split images into segments based on time gaps between consecutive images.
         If two images are more than max_gap_seconds apart, start a new segment.
-        
+
         Args:
             image_files: List of image file paths (should be sorted)
             max_gap_seconds: Maximum time gap in seconds before forcing a split
-            
+
         Returns:
             List of image segments, where each segment is a list of consecutive images
         """
         if not image_files:
             return []
-        
+
         segments = []
         current_segment = [image_files[0]]
         prev_timestamp = self._extract_timestamp_from_filename(image_files[0])
-        
+
         for img_path in image_files[1:]:
             curr_timestamp = self._extract_timestamp_from_filename(img_path)
-            
+
             # If we can't parse timestamps, just keep adding to current segment
             if prev_timestamp is None or curr_timestamp is None:
                 current_segment.append(img_path)
                 continue
-            
+
             # Check time gap
             time_gap = abs(curr_timestamp - prev_timestamp)
-            
+
             if time_gap > max_gap_seconds:
                 # Start a new segment
                 print(f"[Split] Time gap detected: {time_gap:.1f}s between screenshots (threshold: {max_gap_seconds}s)")
-                print(f"  Previous: {image_files[image_files.index(img_path)-1].name}")
+                print(f"  Previous: {image_files[image_files.index(img_path) - 1].name}")
                 print(f"  Current:  {img_path.name}")
                 segments.append(current_segment)
                 current_segment = [img_path]
             else:
                 current_segment.append(img_path)
-            
+
             prev_timestamp = curr_timestamp
-        
+
         # Add the last segment
         if current_segment:
             segments.append(current_segment)
-        
+
         return segments
-    
+
     def _extract_timestamp_from_filename(self, path: Path) -> Optional[float]:
         """
         Extract timestamp from filename. Supports multiple formats:
         1. Float timestamp: 1760702571.228687_reason_move_start.jpg
         2. DateTime format: w5_6713_sstetler1@msn.com20200810004157314.jpg (YYYYMMDDHHMMSSmmm)
-        
+
         Returns timestamp as float (seconds since epoch) or None if unable to parse
         """
         filename = path.name
-        
+
         # Try format 1: float timestamp at the beginning
         m = re.search(r'^(\d+\.\d+)', filename)
         if m:
@@ -408,7 +408,7 @@ class Processor:
                 return float(m.group(1))
             except Exception:
                 pass
-        
+
         # Try format 2: YYYYMMDDHHMMSSmmm datetime format
         # Look for 17 consecutive digits (YYYYMMDDHHMMSSMMM)
         m = re.search(r'(\d{17})', filename)
@@ -423,12 +423,12 @@ class Processor:
                 minute = int(timestamp_str[10:12])
                 second = int(timestamp_str[12:14])
                 millisecond = int(timestamp_str[14:17])
-                
+
                 dt = datetime(year, month, day, hour, minute, second, millisecond * 1000)
                 return dt.timestamp()
             except Exception:
                 pass
-        
+
         # Fallback: try file modification time
         try:
             return path.stat().st_mtime
@@ -437,18 +437,18 @@ class Processor:
 
     def _process_tasks(self, tasks: List[ChunkTask], config_map: dict) -> List[Tuple[ChunkTask, any]]:
         """Process tasks with configurable concurrency using num_workers.
-        
+
         Supports resume: skips tasks that already have caption files.
         Saves incrementally: writes caption file immediately after each task completes.
         """
         results = []
         tasks_to_process = []
-        
+
         # Check for existing captions (resume support)
         for task in tasks:
             config = config_map[task.session_id]
             result_file = config.captions_dir / f"{task.chunk_index:03d}.json"
-            
+
             if result_file.exists():
                 # Load existing result
                 with open(result_file, 'r') as f:
@@ -456,10 +456,10 @@ class Processor:
                 results.append((task, data.get('result', {})))
             else:
                 tasks_to_process.append(task)
-        
+
         if results:
             print(f"[Resume] Loaded {len(results)} existing captions, {len(tasks_to_process)} remaining")
-        
+
         if not tasks_to_process:
             print("[Resume] All chunks already captioned")
             return results
@@ -516,7 +516,7 @@ class Processor:
         fps: int
     ) -> dict:
         """Merge all chunk results and save final captions.
-        
+
         Note: Individual chunk files are already saved incrementally by _save_chunk_result
         or loaded from existing files during resume.
         """

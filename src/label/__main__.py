@@ -49,7 +49,7 @@ def parse_args():
 
     if not args.model:
         if args.client == 'gemini':
-            args.model = 'gemini-2.5-flash'
+            args.model = 'gemini-3-flash-preview'
         elif args.client == 'vllm':
             args.model = 'Qwen/Qwen3-VL-8B-Thinking-FP8'
         elif args.client == 'bigquery':

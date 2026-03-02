@@ -12,8 +12,6 @@ class SaveWorker:
         self,
         session_dir: Path,
         buffer_all: bool = False,
-        compression_quality: int = 70,
-        lossless: bool = False,
         save_screenshots: bool = True
     ):
         """
@@ -22,8 +20,6 @@ class SaveWorker:
         Args:
             session_dir: Directory for the current session
             buffer_all: If True, save all buffer images
-            compression_quality: JPEG compression quality (1-100)
-            lossless: If True, save as PNG (lossless) instead of JPEG
             save_screenshots: If False, skip writing screenshot files to disk
         """
         self.session_dir = Path(session_dir)
@@ -39,8 +35,6 @@ class SaveWorker:
 
         self.input_log = self.session_dir / "input_events.jsonl"
         self.screenshot_log = self.session_dir / "screenshots.jsonl"
-        self.compression_quality = compression_quality
-        self.lossless = lossless
 
     def save_input_event(self, event: InputEvent) -> None:
         """
@@ -74,7 +68,7 @@ class SaveWorker:
 
         try:
             save_dir = self.buffer_imgs_dir if buffer_dir else self.screenshots_dir
-            ext = ".png" if self.lossless else ".jpg"
+            ext = ".png"
             filename = f"{image.timestamp:.6f}_reason_{save_reason}{ext}"
             filepath = save_dir / filename
 
@@ -83,11 +77,8 @@ class SaveWorker:
                     img_bgr = cv2.cvtColor(image.data, cv2.COLOR_RGB2BGR)
                 except Exception:
                     img_bgr = image.data
-                
-                if self.lossless:
-                    cv2.imwrite(str(filepath), img_bgr)
-                else:
-                    cv2.imwrite(str(filepath), img_bgr, [cv2.IMWRITE_JPEG_QUALITY, self.compression_quality])
+
+                cv2.imwrite(str(filepath), img_bgr)
 
             metadata = {
                 'timestamp': image.timestamp,

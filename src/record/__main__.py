@@ -1,4 +1,5 @@
 import argparse
+import os
 import time
 import signal
 import sys
@@ -56,10 +57,9 @@ class ScreenRecorder:
         max_res: tuple[int, int] = None,
         scale: Union[float, dict[int, float]] = None,
         accessibility: bool = False,
-        compression_quality: int = 70,
-        lossless: bool = False,
         save_screenshots: bool = True,
-        disable: Optional[List[str]] = None
+        disable: Optional[List[str]] = None,
+        session_dir: Optional[str] = None
     ):
         """
         Initialize the screen recorder.
@@ -73,6 +73,8 @@ class ScreenRecorder:
             save_screenshots: If False, skip writing screenshot files to disk
             disable: List of event types to disable recording for.
                      Valid values: "move", "scroll", "click", "key"
+            session_dir: Base directory for session logs. Defaults to
+                         the current working directory if not specified.
         """
         self.fps = fps
         self.buffer_seconds = buffer_seconds
@@ -85,8 +87,9 @@ class ScreenRecorder:
         self.image_buffer_size = fps * buffer_seconds
         self.event_buffer_size = fps * buffer_seconds * 30
 
+        base_dir = Path(session_dir) if session_dir else Path.cwd()
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.session_dir = Path(__file__).parent.parent.parent / "logs" / f"session_{timestamp}"
+        self.session_dir = base_dir / "logs" / f"session_{timestamp}"
         self.session_dir.mkdir(parents=True, exist_ok=True)
 
         print(f"Session directory: {self.session_dir}")
@@ -118,8 +121,6 @@ class ScreenRecorder:
         self.save_worker = SaveWorker(
             self.session_dir,
             buffer_all,
-            compression_quality=compression_quality,
-            lossless=lossless,
             save_screenshots=save_screenshots
         )
 
@@ -187,6 +188,11 @@ class ScreenRecorder:
         """Run the real-time visualizer."""
         import sys
         import threading
+
+        # Remove OpenCV's bundled Qt plugin path – it ships an incompatible
+        # set of xcb plugins that prevents the system Qt (used by matplotlib)
+        # from initialising the platform integration layer.
+        os.environ.pop("QT_QPA_PLATFORM_PLUGIN_PATH", None)
 
         # On macOS, matplotlib GUI must run on main thread
         # Since this is running in a daemon thread, use non-interactive backend
@@ -336,32 +342,14 @@ def main():
     parser.add_argument(
         "-r", "--max-res",
         type=int,
-        default=None,
+        default=(1920, 1080),
         nargs=2,
         help="Maximal resolution for screenshots (width, height)"
-    )
-    parser.add_argument(
-        "-p", "--precision",
-        type=str,
-        choices=["accurate", "rough"],
-        default="accurate",
-        help="Precision level for event aggregation (default: accurate)"
     )
     parser.add_argument(
         "-a", "--accessibility",
         action="store_true",
         help="Enable accessibility info capture (macOS only, may impact performance)"
-    )
-    parser.add_argument(
-        "-c", "--compression-quality",
-        type=int,
-        help="JPEG compression quality for saved screenshots (1-100, default: 70)",
-        default=70
-    )
-    parser.add_argument(
-        "-l", "--lossless",
-        action="store_true",
-        help="Save screenshots as PNG (lossless) instead of JPEG"
     )
     parser.add_argument(
         "-d", "--dpi",
@@ -383,10 +371,17 @@ def main():
         help="Event types to disable: move, scroll, click, key. "
              "Example: --disable move scroll"
     )
+    parser.add_argument(
+        "--session-dir",
+        type=str,
+        default=None,
+        help="Base directory for session logs. "
+             "Defaults to the current working directory."
+    )
 
     args = parser.parse_args()
 
-    constants_manager.set_preset(args.precision, verbose=False)
+    constants_manager.set_preset()
 
     # Calculate scale factor from DPI if provided
     scale = args.scale  # Can be a single float
@@ -398,7 +393,7 @@ def main():
             for idx, dpi in monitor_dpis.items():
                 print(f"  Monitor {idx}: {dpi:.1f} DPI → scale {scale[idx]:.3f}")
         else:
-            print(f"Warning: Could not detect screen DPI. --dpi will be ignored.")
+            print("Warning: Could not detect screen DPI. --dpi will be ignored.")
 
     recorder = ScreenRecorder(
         fps=args.fps,
@@ -408,9 +403,8 @@ def main():
         max_res=args.max_res,
         scale=scale,
         accessibility=args.accessibility,
-        compression_quality=args.compression_quality,
-        lossless=args.lossless,
-        disable=args.disable
+        disable=args.disable,
+        session_dir=args.session_dir
     )
     recorder.run()
 
