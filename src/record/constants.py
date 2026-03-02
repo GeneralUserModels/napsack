@@ -75,7 +75,6 @@ class ConstantsManager:
     def __init__(self):
         if not hasattr(self, '_initialized'):
             self._initialized = True
-            preset = os.getenv("CAPTURE_PRECISION", "accurate").lower()
             self.set_preset()
 
     def set_preset(self) -> None:
@@ -90,9 +89,6 @@ class ConstantsManager:
             )
 
         self._current_preset = preset_name
-
-        print(f"Setting constants to '{preset_name}' precision.")
-        print(f"Constants: {self.get()}")
 
     def get(self) -> ConstantsSpec:
         """Get the current constants specification."""
