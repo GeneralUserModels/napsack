@@ -3,8 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "NAPsack"
+name = "napsack"
 version = "0.1.0"
+readme = "README.md"
 description = "NAPsack records and aggregates your computer use — screenshots plus input events (click, keypress, scroll, cursor move). It groups activity into event bursts and uses a VLM pipeline to generate human-readable captions describing what happened."
 requires-python = ">=3.11,<=3.13"
 dependencies = [
