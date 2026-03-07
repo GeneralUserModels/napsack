@@ -33,11 +33,15 @@ GEMINI_API_KEY=your_key_here
 
 **Record** a session (press CTRL+C to stop)
 ```shell
-uv run -m record --monitor
+napsack-record --monitor
+# or without installing:
+uv run -m napsack.record --monitor
 ```
 **Label** the recorded session
 ```shell
-uv run -m label --session logs/session_name --client gemini
+napsack-label --session logs/session_name --client gemini
+# or without installing:
+uv run -m napsack.label --session logs/session_name --client gemini
 ```
 
 > NAPsack supports `gemini` and `vllm` for data labeling and integrates with `big query`
