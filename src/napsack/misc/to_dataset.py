@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import List, Dict, Optional, Tuple
 from datasets import Dataset, DatasetDict, Features, Value, Image as HFImage
 
-from label.processor import load_hash_cache, dedupe_images_by_hash
+from napsack.label.processor import load_hash_cache, dedupe_images_by_hash
 
 
 def parse_timestamp_from_filename(filename: str) -> Optional[float]:

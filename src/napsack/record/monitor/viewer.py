@@ -5,7 +5,7 @@ from collections import deque, defaultdict
 from typing import Deque, Dict, List, Optional
 import warnings
 
-from record.monitor.reader import TailReader
+from napsack.record.monitor.reader import TailReader
 
 MAX_EVENTS = 5000
 MAX_BURSTS = 300

@@ -3,9 +3,9 @@ import threading
 from typing import Optional, Union
 from pynput import mouse
 import mss
-from record.models.event_queue import EventQueue
-from record.models.image import BufferImage
-from record.workers.screenshot import capture_screenshot
+from napsack.record.models.event_queue import EventQueue
+from napsack.record.models.image import BufferImage
+from napsack.record.workers.screenshot import capture_screenshot
 
 
 class ScreenshotHandler:

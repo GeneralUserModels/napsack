@@ -1,7 +1,7 @@
 import threading
 import json
 from collections import deque
-from record.models.aggregation import AggregationRequest, ProcessedAggregation
+from napsack.record.models.aggregation import AggregationRequest, ProcessedAggregation
 
 
 class AggregationWorker:

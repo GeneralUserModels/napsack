@@ -9,12 +9,12 @@ from datetime import datetime
 from typing import Optional, Union, List
 from pynput import mouse, keyboard
 
-from record.models import ImageQueue, AggregationConfig, EventQueue
-from record.workers import SaveWorker, AggregationWorker
-from record.handlers import InputEventHandler, ScreenshotHandler
-from record.monitor import RealtimeVisualizer, plot_summary_stats
-from record.constants import constants_manager
-from record.sanitize import sanitize_aggregations
+from napsack.record.models import ImageQueue, AggregationConfig, EventQueue
+from napsack.record.workers import SaveWorker, AggregationWorker
+from napsack.record.handlers import InputEventHandler, ScreenshotHandler
+from napsack.record.monitor import RealtimeVisualizer, plot_summary_stats
+from napsack.record.constants import constants_manager
+from napsack.record.sanitize import sanitize_aggregations
 
 
 def get_monitor_dpis() -> dict[int, float]:

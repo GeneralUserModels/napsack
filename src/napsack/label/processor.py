@@ -7,9 +7,9 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 
-from label.models import SessionConfig, ChunkTask, Caption, Aggregation, VideoPath, MatchedCaption
-from label.video import create_video, split_video, compute_max_size
-from label.clients import VLMClient, CAPTION_SCHEMA
+from napsack.label.models import SessionConfig, ChunkTask, Caption, Aggregation, VideoPath, MatchedCaption
+from napsack.label.video import create_video, split_video, compute_max_size
+from napsack.label.clients import VLMClient, CAPTION_SCHEMA
 
 
 # ============================================================================

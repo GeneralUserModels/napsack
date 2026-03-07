@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import List, Tuple
 
-from label.models import SessionConfig, VideoPath
+from napsack.label.models import SessionConfig, VideoPath
 
 
 def discover_sessions(

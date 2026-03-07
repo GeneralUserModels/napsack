@@ -2,10 +2,10 @@ from pathlib import Path
 import argparse
 from dotenv import load_dotenv
 
-from label.discovery import discover_sessions, discover_screenshots_sessions, create_single_config
-from label.clients import create_client
-from label.processor import Processor
-from label.visualizer import Visualizer
+from napsack.label.discovery import discover_sessions, discover_screenshots_sessions, create_single_config
+from napsack.label.clients import create_client
+from napsack.label.processor import Processor
+from napsack.label.visualizer import Visualizer
 
 load_dotenv()
 

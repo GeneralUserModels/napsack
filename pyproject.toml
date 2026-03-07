@@ -41,12 +41,12 @@ package-dir = {"" = "src"}
 include-package-data = true
 
 [tool.setuptools.package-data]
-label = ["prompts/*.txt"]
+"napsack.label" = ["prompts/*.txt"]
 
 [project.scripts]
-napsack-record = "record.__main__:main"
-napsack-label = "label.__main__:main"
+napsack-record = "napsack.record.__main__:main"
+napsack-label = "napsack.label.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["label*", "record*", "napsack*"]
+include = ["napsack*"]

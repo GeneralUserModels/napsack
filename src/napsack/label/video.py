@@ -7,7 +7,7 @@ import math
 from PIL import Image, ImageDraw
 import numpy as np
 
-from label.models import Aggregation, ImagePath
+from napsack.label.models import Aggregation, ImagePath
 
 
 BUTTON_COLORS = {

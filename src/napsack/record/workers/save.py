@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 import cv2
-from record.models.image import BufferImage
-from record.models.event import InputEvent
+from napsack.record.models.image import BufferImage
+from napsack.record.models.event import InputEvent
 
 
 class SaveWorker:

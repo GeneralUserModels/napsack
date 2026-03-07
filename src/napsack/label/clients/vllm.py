@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Optional, Dict
 
 from openai import OpenAI
-from label.clients.client import VLMClient, CAPTION_SCHEMA
+from napsack.label.clients.client import VLMClient, CAPTION_SCHEMA
 
 
 class VLLMResponse:

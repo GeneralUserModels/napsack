@@ -2,7 +2,7 @@ from typing import Optional, Any, Dict
 import json
 import os
 import time
-from label.clients.client import VLMClient, CAPTION_SCHEMA
+from napsack.label.clients.client import VLMClient, CAPTION_SCHEMA
 
 from google import genai
 from google.genai import types

@@ -2,8 +2,8 @@ import time
 from typing import List, Optional
 from pynput import mouse
 from screeninfo import get_monitors
-from record.models.event import InputEvent, EventType
-from record.models.event_queue import EventQueue
+from napsack.record.models.event import InputEvent, EventType
+from napsack.record.models.event_queue import EventQueue
 
 
 # Valid event types that can be disabled
@@ -52,7 +52,7 @@ class InputEventHandler:
 
         if self.accessibility_enabled:
             try:
-                from record.handlers.accessibility import AccessibilityHandler
+                from napsack.record.handlers.accessibility import AccessibilityHandler
                 self.accessibility_handler = AccessibilityHandler()
             except ImportError as e:
                 print(f"Warning: Could not import AccessibilityHandler: {e}")

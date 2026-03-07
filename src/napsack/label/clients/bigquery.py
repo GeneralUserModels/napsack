@@ -5,7 +5,7 @@ from pathlib import Path
 from google.cloud import storage
 from google.cloud import bigquery
 
-from label.clients.client import VLMClient, CAPTION_SCHEMA  # still imported, but we don't rely on it by default
+from napsack.label.clients.client import VLMClient, CAPTION_SCHEMA  # still imported, but we don't rely on it by default
 
 # example call-
 # uv run -m label \

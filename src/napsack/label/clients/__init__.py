@@ -1,7 +1,7 @@
-from label.clients.client import VLMClient, CAPTION_SCHEMA
-from label.clients.gemini import GeminiClient, GeminiResponse
-from label.clients.vllm import VLLMClient, VLLMResponse
-from label.clients.bigquery import BigQueryClient, BigQueryResponse
+from napsack.label.clients.client import VLMClient, CAPTION_SCHEMA
+from napsack.label.clients.gemini import GeminiClient, GeminiResponse
+from napsack.label.clients.vllm import VLLMClient, VLLMResponse
+from napsack.label.clients.bigquery import BigQueryClient, BigQueryResponse
 
 
 def create_client(client_type: str, **kwargs) -> VLMClient:

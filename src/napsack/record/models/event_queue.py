@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Callable, Optional, Dict, Any
 from enum import StrEnum
 from collections import deque
-from record.models.event import InputEvent, EventType
-from record.models.aggregation import AggregationConfig, AggregationRequest
-from record.models.image_queue import ImageQueue
-from record.constants import constants_manager
+from napsack.record.models.event import InputEvent, EventType
+from napsack.record.models.aggregation import AggregationConfig, AggregationRequest
+from napsack.record.models.image_queue import ImageQueue
+from napsack.record.constants import constants_manager
 
 
 class Reason(StrEnum):

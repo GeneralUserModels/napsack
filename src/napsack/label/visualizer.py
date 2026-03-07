@@ -6,8 +6,8 @@ import subprocess
 from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 
-from label.video import annotate_image, scale_and_pad, apply_pending_movement, extract_pending_movement, compute_max_size
-from label.models import Aggregation
+from napsack.label.video import annotate_image, scale_and_pad, apply_pending_movement, extract_pending_movement, compute_max_size
+from napsack.label.models import Aggregation
 
 
 class Visualizer:

@@ -4,7 +4,7 @@ from ApplicationServices import (
     AXUIElementCopyElementAtPosition,
     AXUIElementCopyAttributeValue,
 )
-from record.models.event import InputEvent, EventType
+from napsack.record.models.event import InputEvent, EventType
 
 
 class AccessibilityHandler:
