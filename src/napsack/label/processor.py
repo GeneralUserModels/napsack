@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from napsack.label.models import SessionConfig, ChunkTask, Caption, Aggregation, VideoPath, MatchedCaption
 from napsack.label.video import create_video, split_video, compute_max_size
-from napsack.label.clients import VLMClient, CAPTION_SCHEMA
+from napsack.label.clients import VLMClient, CAPTION_SCHEMA, IMAGE_CAPTION_SCHEMA
 
 
 # ============================================================================
@@ -143,6 +143,7 @@ class Processor:
         max_time_gap: float = 300.0,
         hash_cache_path: Optional[str] = None,
         dedupe_threshold: int = 1,
+        image_mode: bool = False,
     ):
         self.client = client
         self.encode_workers = encode_workers
@@ -152,6 +153,7 @@ class Processor:
         self.max_time_gap = max_time_gap
         self.dedupe_threshold = dedupe_threshold
         self.hash_map = load_hash_cache(hash_cache_path) if hash_cache_path else None
+        self.image_mode = image_mode
 
     def _load_prompt(self, path: str) -> str:
         p = Path(path)
@@ -199,6 +201,35 @@ class Processor:
         aggs = config.load_aggregations()
         image_paths = [Path(agg.screenshot_path) for agg in aggs if agg.screenshot_path and Path(agg.screenshot_path).exists()]
         global_start = self._extract_timestamp(image_paths[0]) if image_paths else 0.0
+
+        if self.image_mode:
+            # Skip video encoding — chunk image paths directly
+            aggs = config.load_aggregations()
+            agg_chunks = self._chunk_aggregations(aggs, global_start, config.chunk_duration)
+            tasks = []
+            for i, chunk_aggs in enumerate(agg_chunks):
+                chunk_images = [
+                    Path(agg.screenshot_path) for agg in chunk_aggs
+                    if agg.screenshot_path and Path(agg.screenshot_path).exists()
+                ]
+                prompt_lines = []
+                for j, agg in enumerate(chunk_aggs):
+                    time_str = f"Frame {j + 1}"
+                    prompt_lines.append(agg.to_prompt(time_str))
+                full_prompt = self.prompt.replace("{{LOGS}}", "".join(prompt_lines))
+                with open(config.chunks_dir / f"prompt_{i:03d}.txt", 'w') as f:
+                    f.write(full_prompt)
+                tasks.append(ChunkTask(
+                    session_id=config.session_id,
+                    chunk_index=i,
+                    prompt=full_prompt,
+                    aggregations=chunk_aggs,
+                    chunk_start_time=i * config.chunk_duration,
+                    chunk_duration=config.chunk_duration,
+                    image_paths=chunk_images,
+                ))
+            return tasks
+
         if not config.master_video_path.exists():
             pad_to = compute_max_size(image_paths)
 
@@ -228,11 +259,11 @@ class Processor:
             tasks.append(ChunkTask(
                 session_id=config.session_id,
                 chunk_index=i,
-                video_path=VideoPath(video_path),
                 prompt=full_prompt,
                 aggregations=chunk_aggs,
                 chunk_start_time=i * config.chunk_duration,
-                chunk_duration=config.chunk_duration
+                chunk_duration=config.chunk_duration,
+                video_path=VideoPath(video_path),
             ))
 
         return tasks
@@ -305,6 +336,21 @@ class Processor:
 
             cumulative_time += segment_duration
 
+        if self.image_mode:
+            # Skip video encoding — pass image paths directly as tasks
+            tasks = []
+            for job in chunk_jobs:
+                tasks.append(ChunkTask(
+                    session_id=config.session_id,
+                    chunk_index=job['chunk_index'],
+                    prompt=self.prompt,
+                    aggregations=[],
+                    chunk_start_time=job['chunk_start_time'],
+                    chunk_duration=int(job['actual_duration']),
+                    image_paths=job['chunk_images'],
+                ))
+            return tasks
+
         # Parallel video creation
         def create_chunk_video(job):
             if not job['chunk_video_path'].exists():
@@ -334,11 +380,11 @@ class Processor:
             tasks.append(ChunkTask(
                 session_id=config.session_id,
                 chunk_index=job['chunk_index'],
-                video_path=VideoPath(job['chunk_video_path']),
                 prompt=self.prompt,
                 aggregations=[],
                 chunk_start_time=job['chunk_start_time'],
-                chunk_duration=int(job['actual_duration'])
+                chunk_duration=int(job['actual_duration']),
+                video_path=VideoPath(job['chunk_video_path']),
             ))
 
         return tasks
@@ -488,8 +534,14 @@ class Processor:
 
     def _process_single_task(self, task: ChunkTask) -> any:
         """Process single task with schema."""
-        file_desc = self.client.upload_file(str(task.video_path.resolve()), session_id=task.session_id)
-        response = self.client.generate(task.prompt, file_desc, schema=CAPTION_SCHEMA)
+        if self.image_mode:
+            file_desc = self.client.upload_images(
+                [str(p) for p in task.image_paths], session_id=task.session_id
+            )
+            response = self.client.generate(task.prompt, file_desc, schema=IMAGE_CAPTION_SCHEMA)
+        else:
+            file_desc = self.client.upload_file(str(task.video_path.resolve()), session_id=task.session_id)
+            response = self.client.generate(task.prompt, file_desc, schema=CAPTION_SCHEMA)
 
         return response
 
@@ -525,7 +577,7 @@ class Processor:
             if task.session_id not in session_captions:
                 session_captions[task.session_id] = []
 
-            captions = self._extract_captions(result, task)
+            captions = self._extract_captions(result, task, fps=fps)
             session_captions[task.session_id].extend(captions)
 
         for config in configs:
@@ -539,27 +591,39 @@ class Processor:
 
         return {sid: len(caps) for sid, caps in session_captions.items()}
 
-    def _extract_captions(self, result: any, task: ChunkTask) -> List[Caption]:
+    def _extract_captions(self, result: any, task: ChunkTask, fps: int = 1) -> List[Caption]:
         captions = []
 
         if isinstance(result, str) or not isinstance(result, list):
             return captions
 
         for item in result:
-            start_str = item.get("start", "00:00")
-            end_str = item.get("end", start_str)
+            if self.image_mode:
+                try:
+                    start_frame = int(item.get("start", 1))
+                    rel_start = (start_frame - 1) / fps
+                except Exception:
+                    rel_start = 0
+                try:
+                    end_frame = int(item.get("end", start_frame))
+                    rel_end = (end_frame - 1) / fps
+                except Exception:
+                    rel_end = rel_start
+            else:
+                start_str = item.get("start", "00:00")
+                end_str = item.get("end", start_str)
 
-            try:
-                mins, secs = map(int, start_str.split(":"))
-                rel_start = mins * 60 + secs
-            except Exception:
-                rel_start = 0
+                try:
+                    mins, secs = map(int, start_str.split(":"))
+                    rel_start = mins * 60 + secs
+                except Exception:
+                    rel_start = 0
 
-            try:
-                mins, secs = map(int, end_str.split(":"))
-                rel_end = mins * 60 + secs
-            except Exception:
-                rel_end = rel_start
+                try:
+                    mins, secs = map(int, end_str.split(":"))
+                    rel_end = mins * 60 + secs
+                except Exception:
+                    rel_end = rel_start
 
             abs_start = task.chunk_start_time + rel_start
             abs_end = task.chunk_start_time + rel_end

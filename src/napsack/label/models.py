@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 import json
@@ -136,7 +136,7 @@ class Aggregation:
             reason=data['reason'],
             event_type=data['event_type'],
             request_state=data['request_state'],
-            screenshot_path=Path(data.get('screenshot_path')),
+            screenshot_path=data.get('screenshot_path'),
             events=events,
             monitor=data.get('monitor'),
             burst_id=data.get('burst_id'),
@@ -436,11 +436,12 @@ class MatchedCaption:
 class ChunkTask:
     session_id: str
     chunk_index: int
-    video_path: VideoPath
     prompt: str
     aggregations: List[Aggregation]
     chunk_start_time: float
     chunk_duration: int
+    video_path: Optional[VideoPath] = None
+    image_paths: List[Path] = field(default_factory=list)
 
 
 @dataclass

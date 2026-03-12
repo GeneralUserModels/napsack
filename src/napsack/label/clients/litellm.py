@@ -7,8 +7,6 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 
 import litellm
-litellm._turn_on_debug()
-
 from napsack.label.clients.client import VLMClient, CAPTION_SCHEMA
 
 
@@ -96,6 +94,17 @@ class LiteLLMClient(VLMClient):
             "data_url": f"data:{mime_type};base64,{b64_data}",
         }
 
+    def upload_images(self, paths: list, session_id: str = None) -> Dict:
+        """Upload a list of image paths for frame-by-frame image mode (always base64)."""
+        frames = []
+        for i, path in enumerate(paths):
+            p = Path(path)
+            mime_type = "image/png" if p.suffix.lower() == ".png" else "image/jpeg"
+            with open(p, "rb") as f:
+                b64_data = base64.b64encode(f.read()).decode("utf-8")
+            frames.append({"data_url": f"data:{mime_type};base64,{b64_data}", "label": f"Frame {i + 1}"})
+        return {"type": "image_list", "frames": frames}
+
     def generate(
         self,
         prompt: str,
@@ -131,6 +140,15 @@ class LiteLLMClient(VLMClient):
     def _build_messages(self, prompt: str, file_desc: Optional[Any]) -> list:
         if not file_desc:
             return [{"role": "user", "content": prompt}]
+
+        # Image-list mode: interleave "Frame N" labels with base64 image blocks
+        if isinstance(file_desc, dict) and file_desc.get("type") == "image_list":
+            content = []
+            for frame in file_desc["frames"]:
+                content.append({"type": "text", "text": frame["label"]})
+                content.append({"type": "image_url", "image_url": {"url": frame["data_url"]}})
+            content.append({"type": "text", "text": prompt})
+            return [{"role": "user", "content": content}]
 
         if self._is_gemini:
             mime_type = getattr(file_desc, "_mime_type", "video/mp4")

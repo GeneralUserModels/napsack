@@ -15,10 +15,27 @@ CAPTION_SCHEMA = {
     }
 }
 
+IMAGE_CAPTION_SCHEMA = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "start": {"type": "integer"},
+            "end": {"type": "integer"},
+            "caption": {"type": "string"}
+        },
+        "required": ["start", "end", "caption"]
+    }
+}
+
 
 class VLMClient(ABC):
     @abstractmethod
     def upload_file(self, path: str, session_id: str = None) -> Any:
+        pass
+
+    @abstractmethod
+    def upload_images(self, paths: List[str], session_id: str = None) -> Any:
         pass
 
     @abstractmethod

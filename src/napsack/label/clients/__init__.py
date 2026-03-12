@@ -1,4 +1,4 @@
-from napsack.label.clients.client import VLMClient, CAPTION_SCHEMA
+from napsack.label.clients.client import VLMClient, CAPTION_SCHEMA, IMAGE_CAPTION_SCHEMA
 from napsack.label.clients.litellm import LiteLLMClient
 from napsack.label.clients.bigquery import BigQueryClient, BigQueryResponse
 
@@ -18,5 +18,6 @@ __all__ = [
     "BigQueryClient",
     "BigQueryResponse",
     "CAPTION_SCHEMA",
+    "IMAGE_CAPTION_SCHEMA",
     "create_client",
 ]

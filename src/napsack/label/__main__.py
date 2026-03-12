@@ -27,6 +27,7 @@ def parse_args():
     p.add_argument("--hash-cache", type=str, default=None, help="Path to hash_cache.json for deduplicating consecutive similar images")
     p.add_argument("--dedupe-threshold", type=int, default=1, help="Hamming distance threshold for deduplication (drop if <= threshold, default: 1)")
     p.add_argument("--annotate", action="store_true", help="Annotate videos with cursor positions and clicks (only for standard processing)")
+    p.add_argument("--image-mode", action="store_true", help="Send frames as individual images instead of video (for models that don't support video input)")
     p.add_argument("--skip-existing", action="store_true", help="Skip sessions that have already been processed")
     p.add_argument("--visualize", action="store_true", help="Create annotated video visualizations after processing")
     p.add_argument("--encode-only", action="store_true", help="Only encode videos (create chunks), skip labeling. Useful for pre-processing before running the full pipeline.")
@@ -55,7 +56,12 @@ def parse_args():
         elif args.client == 'bigquery':
             args.model = 'dataset.model'  # Placeholder - user must provide full model reference
     if not args.prompt_file:
-        args.prompt_file = "prompts/screenshots_only.txt" if args.screenshots_only else "prompts/default.txt"
+        if args.image_mode:
+            args.prompt_file = "prompts/image_mode.txt"
+        elif args.screenshots_only:
+            args.prompt_file = "prompts/screenshots_only.txt"
+        else:
+            args.prompt_file = "prompts/default.txt"
 
     return args
 
@@ -104,6 +110,7 @@ def process_with_gemini(args, configs):
         max_time_gap=args.max_time_gap,
         hash_cache_path=args.hash_cache,
         dedupe_threshold=args.dedupe_threshold,
+        image_mode=args.image_mode,
     )
 
     return processor.process_sessions(
@@ -130,6 +137,7 @@ def process_with_vllm(args, configs):
         max_time_gap=args.max_time_gap,
         hash_cache_path=args.hash_cache,
         dedupe_threshold=args.dedupe_threshold,
+        image_mode=args.image_mode,
     )
 
     return processor.process_sessions(
@@ -159,6 +167,7 @@ def process_with_bigquery(args, configs):
         max_time_gap=args.max_time_gap,
         hash_cache_path=args.hash_cache,
         dedupe_threshold=args.dedupe_threshold,
+        image_mode=args.image_mode,
     )
 
     return processor.process_sessions(
