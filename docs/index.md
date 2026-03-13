@@ -37,23 +37,23 @@ hide:
 **Record** a session (press CTRL+C to stop):
 
 ```shell
-napsack-record --monitor
+napsack-record --session-dir ./logs/session_name --monitor
 ```
 
 **Label** the recorded session:
 
 ```shell
 # Gemini 3 flash preview (default)
-napsack-label --session-dir logs/session_name 
+napsack-label --session-dir ./logs/session_name 
 
 # OpenAI
-napsack-label --session-dir logs/session_name --model openai/gpt-4.1-mini
+napsack-label --session-dir ./logs/session_name --model openai/gpt-4.1-mini
 
 # Anthropic
-napsack-label --session-dir logs/session_name --model anthropic/claude-sonnet-4-6
+napsack-label --session-dir ./logs/session_name --model anthropic/claude-sonnet-4-6
 
 # Self-hosted vLLM
-napsack-label --session-dir logs/session_name --model hosted_vllm/Qwen3-VL-8B --api-base http://localhost:8000/v1
+napsack-label --session-dir ./logs/session_name --model hosted_vllm/Qwen3-VL-8B --api-base http://localhost:8000/v1
 ```
 
 NAPsack uses [litellm](https://github.com/BerriAI/litellm), so any provider litellm supports works out of the box. Set the appropriate API key in your environment:
@@ -68,7 +68,7 @@ NAPsack uses [litellm](https://github.com/BerriAI/litellm), so any provider lite
 ## Output
 
 ```
-logs/session_name
+./logs/session_name
 ├── screenshots         # Recorded screenshots
 ├── aggregations.jsonl  # Recorded event bursts
 ├── captions.jsonl      # All VLM-generated captions

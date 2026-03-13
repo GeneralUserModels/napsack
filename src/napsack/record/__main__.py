@@ -87,9 +87,11 @@ class ScreenRecorder:
         self.image_buffer_size = fps * buffer_seconds
         self.event_buffer_size = fps * buffer_seconds * 30
 
-        base_dir = Path(session_dir) if session_dir else Path.cwd()
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.session_dir = base_dir / "logs" / f"session_{timestamp}"
+        if session_dir:
+            self.session_dir = Path(session_dir)
+        else:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.session_dir = Path.cwd() / "logs" / f"session_{timestamp}"
         self.session_dir.mkdir(parents=True, exist_ok=True)
 
         print(f"Session directory: {self.session_dir}")
@@ -379,8 +381,8 @@ def main():
         "--session-dir",
         type=str,
         default=None,
-        help="Base directory for session logs. "
-             "Defaults to the current working directory."
+        help="Directory to save the session to. "
+             "Defaults to ./logs/session_TIMESTAMP/."
     )
 
     args = parser.parse_args()

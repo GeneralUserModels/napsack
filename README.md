@@ -33,26 +33,32 @@ NAPsack uses [litellm](https://github.com/BerriAI/litellm), so pass a full provi
 | OpenAI | `openai/gpt-4.1-mini` | `OPENAI_API_KEY` |
 | Anthropic | `anthropic/claude-4.6-sonnet` | `ANTHROPIC_API_KEY` |
 | vLLM (self-hosted) | `hosted_vllm/Qwen3-VL-8B` + `--api-base http://host/v1` | _(none required)_ |
+| Tinfoil (confidential inference) | _(pass `--client tinfoil`)_ | `TINFOIL_API_KEY` |
 | BigQuery | _(pass `--client bigquery`)_ | Application Default Credentials — `gcloud auth application-default login` |
 
 **Record** a session (press CTRL+C to stop)
 ```shell
-napsack-record --monitor
+napsack-record --session-dir ./logs/session_name --monitor
 # or without installing:
-uv run -m napsack.record --monitor
+uv run -m napsack.record --session-dir ./logs/session_name --monitor
 ```
 **Label** the recorded session
 ```shell
-napsack-label --session-dir logs/session_name --model gemini/gemini-2.5-flash
-uv run -m napsack.label --session-dir logs/session_name --model gemini/gemini-2.5-flash
+napsack-label --session-dir ./logs/session_name --model gemini/gemini-2.5-flash
+uv run -m napsack.label --session-dir ./logs/session_name --model gemini/gemini-2.5-flash
 ```
 
-> NAPsack uses [litellm](https://github.com/BerriAI/litellm) as its labeling backend, supporting Gemini, vLLM/self-hosted models, and any OpenAI-compatible API (OpenAI, Together, Groq, etc.). It also integrates with BigQuery (if you're on Screenomics, this is for you :D).
+> NAPsack uses [litellm](https://github.com/BerriAI/litellm) as its labeling backend, supporting Gemini, vLLM/self-hosted models, and any OpenAI-compatible API (OpenAI, Together, Groq, etc.). It also supports [Tinfoil](https://tinfoil.sh) for confidential inference (your data never leaves a verified TEE), and integrates with BigQuery (if you're on Screenomics, this is for you :D).
+
+To use Tinfoil, pass `--client tinfoil --model <model>`, e.g.:
+```shell
+napsack-label --session-dir ./logs/session_name --client tinfoil --model meta-llama/Llama-3.2-11B-Vision-Instruct
+```
 
 # Output
 
 ```shell
-logs/session_name
+./logs/session_name
 ├── screenshots         # Recorded screenshots
 ├── aggregations.jsonl  # Recorded event bursts
 ├── captions.jsonl	    # All VLM-generated captions
