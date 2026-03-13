@@ -12,10 +12,12 @@ from napsack.label.clients.client import VLMClient, CAPTION_SCHEMA
 
 class LiteLLMClient(VLMClient):
     """
-    Unified LiteLLM-backed client supporting both vllm (OpenAI-compatible) and Gemini models.
+    Unified LiteLLM-backed client. Pass the full litellm model string as model_name:
 
-    For vllm:   model_name="openai/my-model", api_base="http://localhost:8000/v1"
-    For Gemini: model_name="gemini/gemini-2.5-flash" (GEMINI_API_KEY env var or api_key param)
+      gemini/gemini-2.5-flash                                    — Gemini (GEMINI_API_KEY)
+      openai/gpt-4o                                              — OpenAI (OPENAI_API_KEY)
+      anthropic/claude-3-5-sonnet-20241022                       — Anthropic (ANTHROPIC_API_KEY)
+      hosted_vllm/Qwen/Qwen3-VL-8B + api_base=http://host/v1    — vLLM server
     """
 
     def __init__(
@@ -27,21 +29,17 @@ class LiteLLMClient(VLMClient):
     ):
         self.max_tokens = max_tokens
         self.api_base = api_base
-
-        # Accept bare names like "gemini-2.5-flash" → "gemini/gemini-2.5-flash"
-        if not model_name.startswith("gemini/") and model_name.startswith("gemini"):
-            model_name = f"gemini/{model_name}"
+        self.model_name = model_name
 
         self._is_gemini = model_name.startswith("gemini/")
+        self._is_vllm = model_name.startswith("hosted_vllm/")
 
         if self._is_gemini:
             self.api_key = api_key or os.environ.get("GEMINI_API_KEY")
             if not self.api_key:
                 raise RuntimeError("GEMINI_API_KEY not set")
-            self.model_name = model_name
         else:
-            # Ensure openai/ prefix for vllm / OpenAI-compatible endpoints
-            self.model_name = f"openai/{model_name}" if not model_name.startswith("openai/") else model_name
+            # Let litellm pick up the appropriate env var (OPENAI_API_KEY, ANTHROPIC_API_KEY, etc.)
             self.api_key = api_key
 
         print(f"[LiteLLMClient] Model: {self.model_name}")
@@ -62,12 +60,11 @@ class LiteLLMClient(VLMClient):
         mime_type = mime_map.get(suffix, "video/mp4")
         with open(path, "rb") as f:
             file_obj = litellm.create_file(
-                file=(p.name, f, mime_type),  # tuple includes MIME type so Gemini knows it's video
+                file=(p.name, f, mime_type),
                 purpose="assistants",
                 custom_llm_provider="gemini",
                 api_key=self.api_key,
             )
-        # Poll until ACTIVE — file_obj.id is the full URI, just append the API key
         poll_url = f"{file_obj.id}?key={self.api_key}"
         for _ in range(60):
             with urllib.request.urlopen(poll_url) as resp:
@@ -127,8 +124,10 @@ class LiteLLMClient(VLMClient):
         if self._is_gemini:
             params["response_schema"] = schema
             params["response_mime_type"] = "application/json"
-        else:
+        elif self._is_vllm:
             params["extra_body"] = {"guided_json": schema}
+        else:
+            params["response_format"] = {"type": "json_object"}
 
         try:
             completion = litellm.completion(**params)
@@ -157,7 +156,6 @@ class LiteLLMClient(VLMClient):
                 {"type": "text", "text": prompt},
             ]
         else:
-            # file_desc is a dict with data_url
             file_type = file_desc.get("type", "image")
             data_url = file_desc.get("data_url")
             if not data_url:

@@ -25,19 +25,15 @@ NAPsack uses a VLM to generate captions. Create a `.env` file in the project roo
 cp .env.example .env
 ```
 
-Then fill in the key for your chosen client:
+NAPsack uses [litellm](https://github.com/BerriAI/litellm), so pass a full provider-prefixed model string via `--model`:
 
-| Client | Variable | Where to get it |
-|--------|----------|-----------------|
-| `gemini` (default) | `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/apikey) |
-| `vllm` | _(none — pass `--vllm-url`)_ | Self-hosted vLLM server |
-| `bigquery` | _(uses Application Default Credentials)_ | `gcloud auth application-default login` |
-
-For Gemini, your `.env` should contain:
-
-```
-GEMINI_API_KEY=your_key_here
-```
+| Provider | `--model` example | API key variable |
+|----------|-------------------|-----------------|
+| Gemini (default) | `gemini/gemini-2.5-flash` | `GEMINI_API_KEY` |
+| OpenAI | `openai/gpt-4.1-mini` | `OPENAI_API_KEY` |
+| Anthropic | `anthropic/claude-4.6-sonnet` | `ANTHROPIC_API_KEY` |
+| vLLM (self-hosted) | `hosted_vllm/Qwen3-VL-8B` + `--api-base http://host/v1` | _(none required)_ |
+| BigQuery | _(pass `--client bigquery`)_ | Application Default Credentials — `gcloud auth application-default login` |
 
 **Record** a session (press CTRL+C to stop)
 ```shell
@@ -47,12 +43,11 @@ uv run -m napsack.record --monitor
 ```
 **Label** the recorded session
 ```shell
-napsack-label --session logs/session_name --client gemini
-# or without installing:
-uv run -m napsack.label --session logs/session_name --client gemini
+napsack-label --session logs/session_name --model gemini/gemini-2.5-flash
+uv run -m napsack.label --session logs/session_name --model gemini/gemini-2.5-flash
 ```
 
-> NAPsack supports `gemini` and `vllm` for data labeling and integrates with `big query`
+> NAPsack uses [litellm](https://github.com/BerriAI/litellm) as its labeling backend, supporting Gemini, vLLM/self-hosted models, and any OpenAI-compatible API (OpenAI, Together, Groq, etc.). It also integrates with BigQuery (if you're on Screenomics, this is for you :D).
 
 # Output
 

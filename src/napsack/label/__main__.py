@@ -32,13 +32,14 @@ def parse_args():
     p.add_argument("--visualize", action="store_true", help="Create annotated video visualizations after processing")
     p.add_argument("--encode-only", action="store_true", help="Only encode videos (create chunks), skip labeling. Useful for pre-processing before running the full pipeline.")
 
-    p.add_argument("--client", choices=["gemini", "vllm", "bigquery"], default="gemini")
-    p.add_argument("--model", default="")
+    p.add_argument("--client", choices=["litellm", "bigquery"], default="litellm")
+    p.add_argument("--model", default="gemini/gemini-2.5-flash",
+                   help="Full litellm model string, e.g. gemini/gemini-2.5-flash, openai/gpt-4o, "
+                        "anthropic/claude-3-5-sonnet-20241022, hosted_vllm/Qwen3-VL-8B")
+    p.add_argument("--api-base", default=None,
+                   help="API base URL for local/custom endpoints (e.g. http://localhost:8000/v1 for vLLM)")
     p.add_argument("--encode-workers", type=int, default=8, help="Number of parallel workers for video encoding")
     p.add_argument("--label-workers", type=int, default=4, help="Number of parallel workers for VLM labeling")
-
-    vllm_group = p.add_argument_group("vLLM Options")
-    vllm_group.add_argument("--vllm-url")
 
     bq_group = p.add_argument_group("BigQuery Options")
     bq_group.add_argument("--bq-project", help="GCP project ID for AI Platform endpoint")
@@ -49,11 +50,7 @@ def parse_args():
     args = p.parse_args()
 
     if not args.model:
-        if args.client == 'gemini':
-            args.model = 'gemini-3-flash-preview'
-        elif args.client == 'vllm':
-            args.model = 'Qwen/Qwen3-VL-8B-Thinking-FP8'
-        elif args.client == 'bigquery':
+        if args.client == 'bigquery':
             args.model = 'dataset.model'  # Placeholder - user must provide full model reference
     if not args.prompt_file:
         if args.image_mode:
@@ -95,37 +92,11 @@ def setup_configs(args):
     return configs
 
 
-def process_with_gemini(args, configs):
+def process_with_litellm(args, configs):
     client = create_client(
-        'gemini',
+        'litellm',
         model_name=args.model,
-    )
-
-    processor = Processor(
-        client=client,
-        encode_workers=args.encode_workers,
-        label_workers=args.label_workers,
-        screenshots_only=args.screenshots_only,
-        prompt_file=args.prompt_file,
-        max_time_gap=args.max_time_gap,
-        hash_cache_path=args.hash_cache,
-        dedupe_threshold=args.dedupe_threshold,
-        image_mode=args.image_mode,
-    )
-
-    return processor.process_sessions(
-        configs,
-        fps=args.fps,
-        annotate=args.annotate and not args.screenshots_only,
-        encode_only=args.encode_only,
-    )
-
-
-def process_with_vllm(args, configs):
-    client = create_client(
-        'vllm',
-        api_base=args.vllm_url if args.vllm_url.endswith('/v1') else f"{args.vllm_url}/v1",
-        model_name=args.model,
+        api_base=args.api_base,
     )
 
     processor = Processor(
@@ -187,10 +158,8 @@ def main():
 
     print(f"Processing {len(configs)} sessions")
 
-    if args.client == 'gemini':
-        results = process_with_gemini(args, configs)
-    elif args.client == 'vllm':
-        results = process_with_vllm(args, configs)
+    if args.client == 'litellm':
+        results = process_with_litellm(args, configs)
     elif args.client == 'bigquery':
         results = process_with_bigquery(args, configs)
     else:
