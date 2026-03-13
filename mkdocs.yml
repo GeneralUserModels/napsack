@@ -1,0 +1,56 @@
+site_name: NAPsack Documentation
+site_description: Documentation for NAPsack — record and label computer use sessions
+site_author: NAPsack Team
+repo_url: https://github.com/generalusermodels/napsack
+repo_name: napsack
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.highlight
+    - search.share
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - footnotes
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            docstring_options:
+              trim_doctest_flags: true
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            show_if_no_docstring: true
+            show_signature_annotations: true
+            heading_level: 2
+            merge_init_into_class: true
+
+nav:
+  - Getting Started: index.md
+  - API Reference:
+    - Label: api-reference/label.md
+    - Record: api-reference/record.md
