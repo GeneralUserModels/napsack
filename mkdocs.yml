@@ -51,6 +51,7 @@ plugins:
 
 nav:
   - Getting Started: index.md
+  - BigQuery: bigquery.md
   - API Reference:
     - Label: api-reference/label.md
     - Record: api-reference/record.md

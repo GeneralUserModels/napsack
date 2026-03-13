@@ -44,8 +44,9 @@ uv run -m napsack.record --session-dir ./logs/session_name --monitor
 ```
 **Label** the recorded session
 ```shell
-napsack-label --session-dir ./logs/session_name --model gemini/gemini-2.5-flash
-uv run -m napsack.label --session-dir ./logs/session_name --model gemini/gemini-2.5-flash
+napsack-label --session-dir ./logs/session_name # default model is Gemini 3.0 flash
+# or without instaling
+uv run -m napsack.label --session-dir ./logs/session_name 
 ```
 
 > NAPsack uses [litellm](https://github.com/BerriAI/litellm) as its labeling backend, supporting Gemini, vLLM/self-hosted models, and any OpenAI-compatible API (OpenAI, Together, Groq, etc.). It also supports [Tinfoil](https://tinfoil.sh) for confidential inference (your data never leaves a verified TEE), and integrates with BigQuery (if you're on Screenomics, this is for you :D).

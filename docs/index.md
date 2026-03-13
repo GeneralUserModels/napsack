@@ -34,17 +34,27 @@ hide:
 
 ## Quickstart
 
+Create a `.env` file with your API key (or export variables in your shell):
+
+```shell
+cp .env.example .env
+```
+
 **Record** a session (press CTRL+C to stop):
 
 ```shell
 napsack-record --session-dir ./logs/session_name --monitor
+# or without installing:
+uv run -m napsack.record --session-dir ./logs/session_name --monitor
 ```
 
 **Label** the recorded session:
 
 ```shell
 # Gemini 3 flash preview (default)
-napsack-label --session-dir ./logs/session_name 
+napsack-label --session-dir ./logs/session_name
+# or without installing:
+uv run -m napsack.label --session-dir ./logs/session_name
 
 # OpenAI
 napsack-label --session-dir ./logs/session_name --model openai/gpt-4.1-mini
@@ -58,12 +68,20 @@ napsack-label --session-dir ./logs/session_name --model hosted_vllm/Qwen3-VL-8B 
 
 NAPsack uses [litellm](https://github.com/BerriAI/litellm), so any provider litellm supports works out of the box. Set the appropriate API key in your environment:
 
-| Provider | Environment variable |
-|----------|----------------------|
-| Gemini | `GEMINI_API_KEY` |
-| OpenAI | `OPENAI_API_KEY` |
-| Anthropic | `ANTHROPIC_API_KEY` |
-| vLLM | _(none required)_ |
+| Provider | `--model` example | Environment variable |
+|----------|-------------------|----------------------|
+| Gemini (default) | `gemini/gemini-3-flash-preview` | `GEMINI_API_KEY` |
+| OpenAI | `openai/gpt-4.1-mini` | `OPENAI_API_KEY` |
+| Anthropic | `anthropic/claude-sonnet-4-6` | `ANTHROPIC_API_KEY` |
+| vLLM (self-hosted) | `hosted_vllm/Qwen3-VL-8B` + `--api-base http://host/v1` | _(none required)_ |
+| Tinfoil (confidential inference) | _(pass `--client tinfoil`)_ | `TINFOIL_API_KEY` |
+| [BigQuery](bigquery.md) | _(pass `--client bigquery`)_ | Application Default Credentials — `gcloud auth application-default login` |
+
+To use Tinfoil, pass `--client tinfoil --model <model>`, e.g.:
+
+```shell
+napsack-label --session-dir ./logs/session_name --client tinfoil --model meta-llama/Llama-3.2-11B-Vision-Instruct
+```
 
 ## Output
 
