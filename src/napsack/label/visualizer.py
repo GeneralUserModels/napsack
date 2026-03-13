@@ -2,11 +2,10 @@ from pathlib import Path
 from typing import List, Optional
 import json
 import tempfile
-import subprocess
 from PIL import Image, ImageDraw, ImageFont
 from tqdm import tqdm
 
-from napsack.label.video import annotate_image, scale_and_pad, apply_pending_movement, extract_pending_movement, compute_max_size
+from napsack.label.video import annotate_image, scale_and_pad, apply_pending_movement, extract_pending_movement, compute_max_size, _encode_frames_to_video
 from napsack.label.models import Aggregation
 
 
@@ -266,15 +265,6 @@ class Visualizer:
         return lines
 
     def _create_video(self, frames_dir: Path, output_path: Path, fps: int):
-        """Create a video from a directory of frames using FFmpeg."""
+        """Create a video from a directory of frames using PyAV."""
         output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        cmd = [
-            "ffmpeg", "-y", "-framerate", str(fps), "-i", str(frames_dir / "%06d.jpg"),
-            "-c:v", "libx264", "-preset", "medium", "-crf", "23",
-            "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(output_path)
-        ]
-
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            raise RuntimeError(f"FFmpeg failed: {result.stderr}")
+        _encode_frames_to_video(sorted(frames_dir.glob('*.jpg')), output_path, fps)

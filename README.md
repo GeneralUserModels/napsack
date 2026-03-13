@@ -7,7 +7,7 @@
 ---
 # Quickstart
 
-> Requires Python 3.11+ and `ffmpeg` for video generation.
+> Requires Python 3.11+
 
 Install NAPsack from PyPI:
 

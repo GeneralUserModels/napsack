@@ -1,11 +1,10 @@
 from pathlib import Path
 from typing import List, Tuple, Optional
-import subprocess
 import tempfile
-import shutil
 import math
 from PIL import Image, ImageDraw
 import numpy as np
+import av
 
 from napsack.label.models import Aggregation, ImagePath
 
@@ -19,11 +18,8 @@ BUTTON_COLORS = {
 
 def get_video_duration(video_path: Path) -> Optional[float]:
     try:
-        r = subprocess.run([
-            'ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
-            '-of', 'csv=p=0', str(video_path)
-        ], capture_output=True, text=True)
-        return float(r.stdout.strip())
+        with av.open(str(video_path)) as container:
+            return container.duration / 1_000_000.0
     except Exception:
         return None
 
@@ -39,19 +35,35 @@ def split_video(video_path: Path, chunk_duration: int, out_dir: Path, start_inde
 
     print(f"[Split] 1-minute chunking: Splitting {video_path.name} into {num_chunks} chunks of {chunk_duration}s each (total duration: {duration:.1f}s)")
 
-    for i in range(num_chunks):
-        start = i * chunk_duration
-        out_path = out_dir / f"{start_index + i:03d}.mp4"
+    with av.open(str(video_path)) as input_container:
+        video_stream = input_container.streams.video[0]
+        fps = float(video_stream.average_rate)
 
-        cmd = [
-            'ffmpeg', '-y', '-ss', str(start), '-i', str(video_path),
-            '-t', str(chunk_duration), '-c:v', 'libx264', '-preset', 'veryfast',
-            '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart',
-            '-an', str(out_path)
-        ]
+        for i in range(num_chunks):
+            start_s = i * chunk_duration
+            end_s = min((i + 1) * chunk_duration, duration)
+            out_path = out_dir / f"{start_index + i:03d}.mp4"
 
-        r = subprocess.run(cmd, capture_output=True, text=True)
-        if r.returncode == 0:
+            input_container.seek(int(start_s * 1_000_000))
+
+            with av.open(str(out_path), 'w', format='mp4') as output_container:
+                out_stream = output_container.add_stream('libx264', rate=fps)
+                out_stream.pix_fmt = 'yuv420p'
+                out_stream.options = {'preset': 'veryfast', 'crf': '20'}
+
+                for frame in input_container.decode(video_stream):
+                    t = float(frame.pts * video_stream.time_base)
+                    if t < start_s:
+                        continue
+                    if t >= end_s:
+                        break
+                    frame.pts = None
+                    for packet in out_stream.encode(frame.reformat(format='yuv420p')):
+                        output_container.mux(packet)
+
+                for packet in out_stream.encode():
+                    output_container.mux(packet)
+
             chunk_paths.append(out_path)
 
     return chunk_paths
@@ -126,9 +138,6 @@ def extract_pending_movement(agg: Aggregation) -> Optional[Tuple]:
 
     Args:
         agg: Current aggregation
-
-    Returns:
-        Tuple of (last_pos, monitor) if movement exits monitor, None otherwise
     """
     if not agg.monitor or not agg.events:
         return []
@@ -248,6 +257,37 @@ def draw_arrow(draw, img_size, start_pos, end_pos, monitor, scale, x_offset, y_o
     return True
 
 
+def _encode_frames_to_video(frame_files: List[Path], output_path: Path, fps: int):
+    """Encode a sorted list of image files to an mp4 using PyAV (libx264)."""
+    if not frame_files:
+        return
+
+    with Image.open(frame_files[0]) as first:
+        out_w = (first.width // 2) * 2
+        out_h = (first.height // 2) * 2
+
+    with av.open(str(output_path), 'w', format='mp4') as container:
+        stream = container.add_stream('libx264', rate=fps)
+        stream.width = out_w
+        stream.height = out_h
+        stream.pix_fmt = 'yuv420p'
+        stream.options = {'preset': 'veryfast', 'crf': '20'}
+
+        for frame_file in frame_files:
+            with Image.open(frame_file) as img:
+                img = img.convert('RGB')
+                if img.width != out_w or img.height != out_h:
+                    img = img.crop((0, 0, out_w, out_h))
+                arr = np.array(img)
+            av_frame = av.VideoFrame.from_ndarray(arr, format='rgb24')
+            av_frame = av_frame.reformat(format='yuv420p')
+            for packet in stream.encode(av_frame):
+                container.mux(packet)
+
+        for packet in stream.encode():
+            container.mux(packet)
+
+
 def create_video(
     image_paths: List[Path],
     output_path: Path,
@@ -265,9 +305,7 @@ def create_video(
 
         pending_movement = []
 
-        # Handle both aggregations mode and direct image paths mode
         if aggregations is not None:
-            # Use aggregations to get image paths
             for idx, agg in enumerate(aggregations):
                 src = Path(agg.screenshot_path)
                 if not src.exists():
@@ -286,43 +324,23 @@ def create_video(
                         scale, x_off, y_off = 1.0, 0, 0
 
                     img = annotate_image(img, agg, scale, x_off, y_off)
-
                     pending_movement = extract_pending_movement(agg)
-
                     img.save(dst)
                 else:
                     with Image.open(src) as im:
-                        im.save(dst, format="PNG")
+                        img = im.convert('RGB')
+                        if pad_to:
+                            img, _, _, _ = scale_and_pad(img, pad_to[0], pad_to[1])
+                        img.save(dst, format="PNG")
                     pending_movement = []
         else:
-            # Use image_paths directly (screenshots-only mode)
             for idx, img_path in enumerate(image_paths):
                 src = Path(img_path)
                 dst = tmpdir_path / f"{idx:06d}.png"
                 with Image.open(src) as im:
-                    im.save(dst, format="PNG")
+                    img = im.convert('RGB')
+                    if pad_to:
+                        img, _, _, _ = scale_and_pad(img, pad_to[0], pad_to[1])
+                    img.save(dst, format="PNG")
 
-        vf_parts = []
-        if pad_to:
-            w, h = pad_to
-            vf_parts.append(f"scale=iw*min({w}/iw\\,{h}/ih):ih*min({w}/iw\\,{h}/ih),pad={w}:{h}:(ow-iw)/2:(oh-ih)/2")
-
-        # Ensure even dimensions for yuv420p compatibility
-        vf_parts.append("pad=ceil(iw/2)*2:ceil(ih/2)*2")
-
-        cmd = [
-            'ffmpeg', '-y', '-start_number', '0', '-framerate', str(fps),
-            '-i', str(tmpdir_path / '%06d.png'), '-c:v', 'libx264',
-            '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
-            '-movflags', '+faststart',
-            '-vf', ','.join(vf_parts)
-        ]
-
-        cmd.append(str(output_path))
-
-        try:
-            subprocess.run(cmd, capture_output=True, check=True)
-        except FileNotFoundError:
-            raise RuntimeError("ffmpeg not found. Install it with: brew install ffmpeg") from None
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"ffmpeg failed (exit {e.returncode}):\n{e.stderr.decode().strip()}") from None
+        _encode_frames_to_video(sorted(tmpdir_path.glob('*.png')), output_path, fps)
